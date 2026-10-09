@@ -24,20 +24,31 @@
     --sidebar-w:330px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{height:100%; overscroll-behavior:none;}
-  body{
+  html,body{
+    height:100%;
+    overscroll-behavior:none;
     margin:0;
+  }
+  body{
     background: radial-gradient(circle at 20% 0%, var(--bg-grad1), var(--bg-grad2) 60%);
     color:var(--text);
     font-family:'Segoe UI', -apple-system, Roboto, Helvetica, Arial, sans-serif;
-    display:flex; flex-wrap:wrap; min-height:100vh;
-    overflow-x:hidden;
+    display:flex;
+    height:100vh;
+    width:100vw;
+    overflow:hidden;
+  }
+  @supports (height: 100dvh){
+    body{ height:100dvh; }
   }
 
   #menuToggle{
     display:none;
-    position:fixed; top:14px; left:14px; z-index:60;
-    width:46px; height:46px; border-radius:50%;
+    position:fixed;
+    top: calc(14px + env(safe-area-inset-top));
+    left: calc(14px + env(safe-area-inset-left));
+    z-index:60;
+    width:48px; height:48px; border-radius:50%;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     color:#0d1206; border:none; font-size:20px; font-weight:700;
     align-items:center; justify-content:center;
@@ -54,7 +65,7 @@
 
   #sidebar{
     width:var(--sidebar-w); flex-shrink:0;
-    max-height:100vh; overflow-y:auto;
+    height:100%; overflow-y:auto;
     padding:20px 18px 40px;
     background: linear-gradient(180deg, rgba(20,26,13,0.97), rgba(14,18,9,0.97));
     border-right:1px solid var(--border);
@@ -202,18 +213,26 @@
     padding:2px 8px; border-radius:999px; margin-left:6px;
   }
 
+  /* ---------- CANVAS-BEREICH ---------- */
   #canvasWrap{
-    flex:1; display:flex; align-items:center; justify-content:center;
-    padding:24px; min-width:0; min-height:0;
+    flex:1;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+    min-width:0; min-height:0;
+    height:100%;
+    overflow:hidden;
+    position:relative;
   }
   canvas{
     background:#2e5e23;
-    max-width:100%; height:auto; width:min(1600px,100%);
+    width:auto; height:auto;
+    max-width:100%; max-height:100%;
     aspect-ratio:1600/1000;
     border-radius:18px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(139,241,63,0.08);
     touch-action:none; cursor:crosshair;
     border:1px solid rgba(139,241,63,0.15);
+    display:block;
   }
 
   .statgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
@@ -237,43 +256,59 @@
   #orientationBanner{
     display:none;
     position:fixed; top:0; left:0; right:0; z-index:70;
+    padding-top: env(safe-area-inset-top);
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     color:#0d1206; font-weight:700; font-size:13px;
-    padding:10px 16px; text-align:center;
+    text-align:center;
     align-items:center; justify-content:center; gap:10px;
     box-shadow:0 4px 14px rgba(0,0,0,0.4);
+  }
+  #orientationBanner .inner{
+    padding:10px 16px; display:flex; align-items:center; justify-content:center; gap:10px;
   }
   #orientationBanner button{
     background:rgba(13,18,6,0.2); color:#0d1206; border:1px solid rgba(13,18,6,0.3);
     padding:4px 10px; border-radius:999px; font-size:12px;
   }
 
-  /* ---------- MOBILE LAYOUT ---------- */
+  /* ---------- MOBILE LAYOUT (echtes Vollbild) ---------- */
   @media (max-width: 880px){
     body{ flex-direction:column; }
 
     #menuToggle{ display:flex; }
 
     #sidebar{
-      position:fixed; top:0; left:0; height:100vh;
+      position:fixed; top:0; left:0; height:100vh; height:100dvh;
       width:85vw; max-width:360px;
       transform:translateX(-105%);
       transition: transform .25s ease;
       z-index:50;
       box-shadow: 10px 0 40px rgba(0,0,0,0.5);
-      padding-top:66px;
+      padding-top: calc(66px + env(safe-area-inset-top));
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
     }
     #sidebar.open{ transform:translateX(0); }
     #sidebarCloseBtn{ display:block; }
 
+    /* Canvas-Container nutzt JETZT wirklich die komplette Bildschirmfläche
+       statt nur die Breite -- vorher führte width:100% + height:auto dazu,
+       dass auf schmalen Hochformat-Screens nur ein winziger Kasten entstand. */
     #canvasWrap{
-      width:100%; padding:10px;
-      padding-top:64px;
-      align-items:flex-start;
+      width:100vw; width:100dvw;
+      height:100vh; height:100dvh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
+
     canvas{
-      width:100%;
-      max-height:calc(100vh - 90px);
+      /* Echtes "Fit-to-screen": nutzt maximal verfügbare Breite UND Höhe,
+         bleibt dabei im korrekten Seitenverhältnis (letterboxed). */
+      max-width:100%;
+      max-height:100%;
+      width:auto;
+      height:auto;
+      border-radius:0;
+      border:none;
+      box-shadow:none;
     }
 
     button{ padding:12px 8px; font-size:13.5px; }
@@ -295,8 +330,10 @@
 <button id="menuToggle">☰</button>
 <div id="backdrop"></div>
 <div id="orientationBanner">
-  🔄 Für mehr Übersicht Gerät drehen (Querformat)
-  <button id="orientationDismiss">OK</button>
+  <div class="inner">
+    🔄 Für mehr Übersicht Gerät drehen (Querformat)
+    <button id="orientationDismiss">OK</button>
+  </div>
 </div>
 
 <div id="sidebar">
